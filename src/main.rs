@@ -28,7 +28,7 @@ fn count_nodes(pos: &Position, depth: usize) -> u64 {
 
         let nodes: u64 = count_nodes(&updated_pos, depth-1);
 
-        if depth == 4 {
+        if depth == 5 {
             println!("{}{}: {}", SQUARE_NAMES[move_list[i].from_square], SQUARE_NAMES[move_list[i].to_square],  nodes);
         }
 
@@ -40,10 +40,9 @@ fn count_nodes(pos: &Position, depth: usize) -> u64 {
 
 fn main() {
     let mut pos = Position::new();
-    pos.parse_fen("8/2p5/3p4/KP3k1r/6R1/8/4P1P1/8 w - - 3 3");
-
+    pos.parse_fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10 ");
 
     println!("{}", pos);
 
-    println!("Nodes: {}", count_nodes(&pos, 4))
+    println!("Nodes: {}", count_nodes(&pos, 5))
 }

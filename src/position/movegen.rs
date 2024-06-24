@@ -224,7 +224,7 @@ impl Position {
             piece::PAWN => {
                 // handle case where checking pawn can be en passanted
                 if self.ep_square != square::NONE {
-                    self.gen_masked_pseudo_legal_moves(move_list, move_count, BB_ALL & self.pawns, square_bb(self.ep_square) | checkers);
+                    self.gen_masked_pseudo_legal_moves(move_list, move_count, BB_ALL & self.pawns, square_bb(self.ep_square));
                     blocking_mask = checkers;
                 } else {
                     blocking_mask = checkers;
