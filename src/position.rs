@@ -6,7 +6,7 @@ use crate::types::*;
 use crate::bitboard::*;
 use movegen::AttackTable;
 
-#[derive(Copy, Clone)]
+#[derive(Default, Copy, Clone)]
 pub struct Position {
     pawns: Bitboard,
     knights: Bitboard,
@@ -26,30 +26,6 @@ pub struct Position {
     halfmove_count: u8,
     fullmove_count: u8,
 }
-
-impl Default for Position {
-    fn default() -> Position {
-        Self {
-            pawns: BB_NONE,
-            knights: BB_NONE,
-            bishops: BB_NONE,
-            rooks: BB_NONE,
-            queens: BB_NONE,
-            kings: BB_NONE,
-
-            occupied: [BB_NONE; 2],
-
-            castling_rights: BB_NONE,
-            ep_square: square::NONE,
-
-            turn: color::WHITE,
-
-            halfmove_count: 0,
-            fullmove_count: 0,
-        }
-    }
-}
-
 
 impl Position {
     // create new standard chess starting position

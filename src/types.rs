@@ -3,21 +3,11 @@ pub type Piece = usize;
 pub type Color = usize;
 pub type Square = usize;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Move {
     pub from_square: Square,
     pub to_square: Square,
     pub promotion: Piece
-}
-
-impl Default for Move {
-    fn default() -> Self {
-        Self {
-            from_square: square::NONE,
-            to_square: square::NONE,
-            promotion: piece::NONE
-        }
-    }
 }
 
 impl std::fmt::Display for Move {
