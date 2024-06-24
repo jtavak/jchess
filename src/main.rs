@@ -11,25 +11,25 @@ use crate::types::*;
 use crate::bitboard::*;
 use crate::position::Position;
 
-fn count_nodes(states: &mut [Position; 32], depth: usize, max_depth: usize) -> u32 {
-    if depth == max_depth {
+fn count_nodes(pos: &Position, depth: usize) -> u64 {
+    if depth == 0 {
         return 1;
     }
 
     let mut move_list: [Move; 256] = [Move::default(); 256];
     let mut move_count: usize = 0;
 
-    states[depth].gen_legal_moves(&mut move_list, &mut move_count);
+    pos.gen_legal_moves(&mut move_list, &mut move_count);
 
-    let mut total_count: u32 = 0;
+    let mut total_count: u64 = 0;
     for i in 0..move_count {
-        states[depth+1] = states[depth];
-        states[depth+1].make(&move_list[i]);
+        let mut updated_pos = *pos;
+        updated_pos.make(&move_list[i]);
 
-        let nodes: u32 = count_nodes(states, depth+1, max_depth);
+        let nodes: u64 = count_nodes(&updated_pos, depth-1);
 
-        if depth == 0 {
-            println!("{}: {}", move_list[i], nodes);
+        if depth == 4 {
+            println!("{}{}: {}", SQUARE_NAMES[move_list[i].from_square], SQUARE_NAMES[move_list[i].to_square],  nodes);
         }
 
         total_count += nodes;
@@ -39,16 +39,11 @@ fn count_nodes(states: &mut [Position; 32], depth: usize, max_depth: usize) -> u
 }
 
 fn main() {
-    let mut states: [Position; 32] = [Position::default(); 32];
-
     let mut pos = Position::new();
-    
-    // TODO: figure out why this perft differs from stockfish at depth 5
-    pos.parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
+    pos.parse_fen("8/2p5/3p4/KP3k1r/6R1/8/4P1P1/8 w - - 3 3");
 
-    states[0] = pos;
 
     println!("{}", pos);
 
-    println!("Nodes: {}", count_nodes(&mut states, 0, 5))
+    println!("Nodes: {}", count_nodes(&pos, 4))
 }

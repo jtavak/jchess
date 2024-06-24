@@ -26,7 +26,7 @@ impl Position {
         let mut i: usize = 0;
         let mut j: usize = 0;
         while j < *move_count {
-            if self.is_legal(move_list[j]) {
+            if self.is_legal(&move_list[j]) {
                 move_list[i] = move_list[j];
                 i += 1;
             }
@@ -224,7 +224,8 @@ impl Position {
             piece::PAWN => {
                 // handle case where checking pawn can be en passanted
                 if self.ep_square != square::NONE {
-                    blocking_mask = square_bb(self.ep_square) | checkers;
+                    self.gen_masked_pseudo_legal_moves(move_list, move_count, BB_ALL & self.pawns, square_bb(self.ep_square) | checkers);
+                    blocking_mask = checkers;
                 } else {
                     blocking_mask = checkers;
                 }
@@ -284,7 +285,7 @@ impl Position {
         self.is_attacked(king)
     }
 
-    fn is_legal(&self, mv: Move) -> bool {
+    fn is_legal(&self, mv: &Move) -> bool {
         // king can't move into check
         if self.piece_at(mv.from_square) == piece::KING && self.is_attacked(mv.to_square){
             return false;
@@ -337,7 +338,7 @@ impl Position {
             }
 
             // diagonal attacks
-            if ATTACK_TABLE.get_sliding_attacks(lsb(self.kings & self_occupied), piece::BISHOP, ep_board) & opp_occupied & (self.rooks | self.queens) > 0 {
+            if ATTACK_TABLE.get_sliding_attacks(lsb(self.kings & self_occupied), piece::BISHOP, ep_board) & opp_occupied & (self.bishops | self.queens) > 0 {
                 return false;
             }
         }
