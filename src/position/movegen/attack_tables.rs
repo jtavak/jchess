@@ -224,16 +224,16 @@ impl AttackTable {
     fn init_rays(&mut self) {
         let directions = [-9, -8, -7, -1, 1, 7, 8, 9];
 
-        let mut from_square: i32 = 0;
+        let mut from_square: i8 = 0;
         while from_square < 64 {
             for dir in directions {
                 // generate bitmask
                 let mut bitmask: Bitboard = BB_NONE;
-                let mut prev_square: i32 = from_square;
+                let mut prev_square: i8 = from_square;
 
                 bitmask |= square_bb(prev_square as Square);
 
-                let mut curr_square: i32 = prev_square + dir;
+                let mut curr_square: i8 = prev_square + dir;
 
                 while curr_square >= 0 && curr_square <= 63 && chebyshev_distance(prev_square as Square, curr_square as Square) < 2 {
                     bitmask |= square_bb(curr_square as Square);

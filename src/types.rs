@@ -3,7 +3,7 @@ pub type Piece = usize;
 pub type Color = usize;
 pub type Square = usize;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Move {
     pub from_square: Square,
     pub to_square: Square,

@@ -4,7 +4,6 @@
 mod types;
 mod bitboard;
 mod position;
-mod game;
 
 use lazy_static::lazy_static;
 
@@ -12,19 +11,44 @@ use crate::types::*;
 use crate::bitboard::*;
 use crate::position::Position;
 
+fn count_nodes(states: &mut [Position; 32], depth: usize, max_depth: usize) -> u32 {
+    if depth == max_depth {
+        return 1;
+    }
+
+    let mut move_list: [Move; 256] = [Move::default(); 256];
+    let mut move_count: usize = 0;
+
+    states[depth].gen_legal_moves(&mut move_list, &mut move_count);
+
+    let mut total_count: u32 = 0;
+    for i in 0..move_count {
+        states[depth+1] = states[depth];
+        states[depth+1].make(&move_list[i]);
+
+        let nodes: u32 = count_nodes(states, depth+1, max_depth);
+
+        if depth == 0 {
+            println!("{}: {}", move_list[i], nodes);
+        }
+
+        total_count += nodes;
+    }
+
+    return total_count;
+}
+
 fn main() {
+    let mut states: [Position; 32] = [Position::default(); 32];
+
     let mut pos = Position::new();
-    pos.parse_fen("8/4K3/8/8/1R1pP1k1/8/8/8 b - e3 0 1");
+    
+    // TODO: figure out why this perft differs from stockfish at depth 5
+    pos.parse_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ");
+
+    states[0] = pos;
+
     println!("{}", pos);
 
-    let mut move_list = [Move::default(); 256];
-    let mut move_count: usize = 0;
-    pos.gen_legal_moves(&mut move_list, &mut move_count);
-    
-    println!("moves: {}", move_count);
-    for i in 0..move_count {
-        let m = move_list[i];
-        println!("{}: {}", PIECE_NAMES[pos.piece_at(m.from_square) as usize], m);
-        
-    }
+    println!("Nodes: {}", count_nodes(&mut states, 0, 5))
 }

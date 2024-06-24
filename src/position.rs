@@ -3,9 +3,10 @@ use std::fmt;
 pub mod movegen;
 
 use crate::types::*;
-use crate::bitboard::{BB_NONE, square_bb};
+use crate::bitboard::*;
 use movegen::AttackTable;
 
+#[derive(Copy, Clone)]
 pub struct Position {
     pawns: Bitboard,
     knights: Bitboard,
@@ -25,6 +26,30 @@ pub struct Position {
     halfmove_count: u8,
     fullmove_count: u8,
 }
+
+impl Default for Position {
+    fn default() -> Position {
+        Self {
+            pawns: BB_NONE,
+            knights: BB_NONE,
+            bishops: BB_NONE,
+            rooks: BB_NONE,
+            queens: BB_NONE,
+            kings: BB_NONE,
+
+            occupied: [BB_NONE; 2],
+
+            castling_rights: BB_NONE,
+            ep_square: square::NONE,
+
+            turn: color::WHITE,
+
+            halfmove_count: 0,
+            fullmove_count: 0,
+        }
+    }
+}
+
 
 impl Position {
     // create new standard chess starting position
@@ -205,6 +230,113 @@ impl Position {
     }
 }
 
+// implement move making features
+impl Position {
+    pub fn make(&mut self, mv: &Move) {
+        // increment move counters
+        self.halfmove_count += 1;
+        if self.turn == color::BLACK {
+            self.fullmove_count += 1;
+        }
+
+        // TODO: implement halfmove clock zeroing
+
+        let from_bb: Bitboard = square_bb(mv.from_square);
+        let to_bb: Bitboard = square_bb(mv.to_square);
+
+        let mut piece_type: Piece = self.remove_piece_at(mv.from_square);
+
+        // castling rights
+        self.castling_rights &= !(from_bb | to_bb);
+        if piece_type == piece::KING {
+            // update castling rights on king move
+            if self.turn == color::WHITE {
+                self.castling_rights &= !BB_RANK_1;
+            } else {
+                self.castling_rights &= !BB_RANK_8;
+            }
+        }
+
+        // en passant related things
+        let prev_ep_square: Square = self.ep_square;
+        self.ep_square = square::NONE;
+
+        if piece_type == piece::PAWN {
+            let delta: i8 = mv.to_square as i8 - mv.from_square as i8;
+
+            if delta == 16 {
+                self.ep_square = mv.from_square + 8;
+            } else if delta == -16 {
+                self.ep_square = mv.from_square - 8;
+            } else if mv.to_square == prev_ep_square {
+                self.remove_piece_at((prev_ep_square as i8 + if self.turn == color::WHITE {-8} else {8}) as Square);
+            }
+        }
+
+        // handle pawn promotions
+        if mv.promotion != piece::NONE {
+            piece_type = mv.promotion;
+        }
+
+        // add new piece, also handle castling
+        if piece_type == piece::KING && chebyshev_distance(mv.from_square, mv.to_square) > 1 {
+            if square_file(mv.to_square) < square_file(mv.from_square) {
+                self.set_piece_at(if self.turn == color::WHITE {square::C1} else {square::C8}, piece::KING, self.turn);
+                self.set_piece_at(if self.turn == color::WHITE {square::D1} else {square::D8}, piece::ROOK, self.turn);
+                self.remove_piece_at(if self.turn == color::WHITE {square::A1} else {square::A8});
+            } else {
+                self.set_piece_at(if self.turn == color::WHITE {square::G1} else {square::G8}, piece::KING, self.turn);
+                self.set_piece_at(if self.turn == color::WHITE {square::F1} else {square::F8}, piece::ROOK, self.turn);
+                self.remove_piece_at(if self.turn == color::WHITE {square::H1} else {square::H8});
+            }
+        } else {
+            self.set_piece_at(mv.to_square, piece_type, self.turn);
+        }
+
+
+        self.turn ^= 1;
+    }
+
+    // remove piece (assuming it's already there)
+    fn remove_piece_at(&mut self, sq: Square) -> Piece {
+        let piece_type: Piece = self.piece_at(sq);
+        let piece_color: Color = self.color_at(sq);
+        let piece_bb: Bitboard = !square_bb(sq);
+
+        match piece_type {
+            piece::PAWN => self.pawns &= piece_bb,
+            piece::KNIGHT => self.knights &= piece_bb,
+            piece::BISHOP => self.bishops &= piece_bb,
+            piece::ROOK => self.rooks &= piece_bb,
+            piece::QUEEN => self.queens &= piece_bb,
+            piece::KING => self.kings &= piece_bb,
+            piece::NONE => return piece_type,
+            _ => ()
+        }
+
+        self.occupied[piece_color] &= piece_bb;
+
+        piece_type
+    }
+
+    fn set_piece_at(&mut self, sq: Square, piece_type: Piece, piece_color: Color) {
+        self.remove_piece_at(sq);
+
+        let piece_bb: Bitboard = square_bb(sq);
+        match piece_type {
+            piece::PAWN => self.pawns |= piece_bb,
+            piece::KNIGHT => self.knights |= piece_bb,
+            piece::BISHOP => self.bishops |= piece_bb,
+            piece::ROOK => self.rooks |= piece_bb,
+            piece::QUEEN => self.queens |= piece_bb,
+            piece::KING => self.kings |= piece_bb,
+            _ => ()
+        }
+
+        self.occupied[piece_color] |= piece_bb;
+    }
+}
+
 impl fmt::Display for Position {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for i in (0..8).rev() {
@@ -226,6 +358,7 @@ impl fmt::Display for Position {
             }
             writeln!(f)?;
         }
+        writeln!(f, "\n{} to play\n", if self.turn == color::WHITE {"White"} else {"Black"})?;
         Ok(())
     }
 }

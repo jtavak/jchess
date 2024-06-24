@@ -21,19 +21,18 @@ impl Position {
             self.gen_evasions(move_list, move_count);
         } else {
             self.gen_masked_pseudo_legal_moves(move_list, move_count, BB_ALL, BB_ALL);
-
-            // iterate over pseudo legal moves, getting rid of illegal moves
-            let mut i: usize = 0;
-            let mut j: usize = 0;
-            while j < *move_count {
-                if self.is_legal(move_list[j]) {
-                    move_list[i] = move_list[j];
-                    i += 1;
-                }
-                j += 1;
-            }
-            *move_count = i;
         }
+        // iterate over pseudo legal moves, getting rid of illegal moves
+        let mut i: usize = 0;
+        let mut j: usize = 0;
+        while j < *move_count {
+            if self.is_legal(move_list[j]) {
+                move_list[i] = move_list[j];
+                i += 1;
+            }
+            j += 1;
+        }
+        *move_count = i;
     }
     // generate all pseudo-legal moves, not caring about issues with checks, etc.
     pub fn gen_masked_pseudo_legal_moves(&self, move_list: &mut [Move; 256], move_count: &mut usize, from_mask: Bitboard, to_mask: Bitboard) {      
@@ -127,13 +126,13 @@ impl Position {
         // prepare pawn advance generation
         let mut single_advances: Bitboard;
         let mut double_advances: Bitboard;
-        let single_delta: i32;
+        let single_delta: i8;
         if self.turn == color::WHITE {
             single_advances = (pawns << 8) & !occupied;
             double_advances = (single_advances << 8) & !occupied & BB_RANK_4 & to_mask;
             single_delta = 8;
         } else {
-            single_advances = (pawns >> 8) & !occupied & to_mask;
+            single_advances = (pawns >> 8) & !occupied;
             double_advances = (single_advances >> 8) & !occupied & BB_RANK_5 & to_mask;
             single_delta = -8;
         }
@@ -143,15 +142,21 @@ impl Position {
         // generate single pawn moves
         while single_advances > 0 {
             let to_square: Square = pop_lsb(&mut single_advances);
-            let from_square: Square = (to_square as i32 - single_delta) as usize;
+            let from_square: Square = (to_square as i8 - single_delta) as usize;
             
             // if promotion
             if square_rank(to_square) == 0 || square_rank(to_square) == 7 {
                 move_list[*move_count] = Move {from_square, to_square, promotion: piece::QUEEN};
+                *move_count += 1;
+
                 move_list[*move_count] = Move {from_square, to_square, promotion: piece::ROOK};
+                *move_count += 1;
+
                 move_list[*move_count] = Move {from_square, to_square, promotion: piece::BISHOP};
+                *move_count += 1;
+
                 move_list[*move_count] = Move {from_square, to_square, promotion: piece::KNIGHT};
-                *move_count += 4;
+                *move_count += 1;
             } else {
                 move_list[*move_count] = Move {from_square, to_square, promotion: piece::NONE};
                 *move_count += 1;
@@ -161,7 +166,7 @@ impl Position {
         // generate double pawn moves
         while double_advances > 0 {
             let to_square: Square = pop_lsb(&mut double_advances);
-            let from_square: Square = (to_square as i32 - single_delta*2) as usize;
+            let from_square: Square = (to_square as i8 - single_delta*2) as usize;
 
             move_list[*move_count] = Move {from_square, to_square, promotion: piece::NONE};
             *move_count += 1;
@@ -188,7 +193,8 @@ impl Position {
         let mut sliders: Bitboard = checkers & (self.rooks | self.bishops | self.queens);
         let mut attack_mask: Bitboard = BB_NONE;
         while sliders > 0 {
-            attack_mask |= ATTACK_TABLE.get_ray(pop_lsb(&mut sliders), king);
+            let slider_square = pop_lsb(&mut sliders);
+            attack_mask |= ATTACK_TABLE.get_ray(slider_square, king) & !square_bb(slider_square);
         }
         
         // generate king moves
@@ -218,7 +224,7 @@ impl Position {
             piece::PAWN => {
                 // handle case where checking pawn can be en passanted
                 if self.ep_square != square::NONE {
-                    blocking_mask = square_bb(self.ep_square);
+                    blocking_mask = square_bb(self.ep_square) | checkers;
                 } else {
                     blocking_mask = checkers;
                 }
