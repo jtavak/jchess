@@ -1,5 +1,4 @@
 use crate::types::*;
-use crate::bitboard::*;
 use crate::position::Position;
 
 fn count_nodes(pos: &Position, depth: u8) -> u64 {

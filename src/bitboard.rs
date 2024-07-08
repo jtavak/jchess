@@ -27,6 +27,10 @@ pub const BB_FILE_H: Bitboard = 0x101010101010101 << 7;
 pub const BB_DIAG_ASC_0: Bitboard = 0x8040201008040201;
 pub const BB_DIAG_DESC_0: Bitboard = 0x102040810204080;
 
+// pieces on these squares prevent castling
+pub const CASTLE_BLOCKER_MASK_KINGSIDE: Bitboard = (BB_FILE_F | BB_FILE_G) & (BB_RANK_1 | BB_RANK_8);
+pub const CASTLE_BLOCKER_MASK_QUEENSIDE: Bitboard = (BB_FILE_B | BB_FILE_C | BB_FILE_D) & (BB_RANK_1 | BB_RANK_8);
+
 #[inline]
 pub const fn square_bb(sq: Square) -> Bitboard {
     BB_ONE << sq
