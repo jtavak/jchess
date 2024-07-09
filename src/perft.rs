@@ -1,4 +1,5 @@
 use crate::types::*;
+use crate::movegen::gen_legal_moves;
 use crate::position::Position;
 
 // check move generation against positions from https://www.chessprogramming.org/Perft_Results
@@ -26,7 +27,7 @@ pub fn perft(pos: &Position, depth: u8) -> u64 {
     let mut move_list: [Move; 256] = [Move::default(); 256];
     let mut move_count: usize = 0;
 
-    pos.gen_legal_moves(&mut move_list, &mut move_count);
+    gen_legal_moves(pos, &mut move_list, &mut move_count);
 
     let mut total_count: u64 = 0;
     for i in 0..move_count {
